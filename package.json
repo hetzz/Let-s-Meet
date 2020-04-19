@@ -10,7 +10,9 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@material-ui/core": "^4.9.11",
     "react": "16.11.0",
+    "react-dom": "^16.13.1",
     "react-native": "0.62.2"
   },
   "devDependencies": {
