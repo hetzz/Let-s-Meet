@@ -1,2 +1,4 @@
-# P2P
-Peer to peer video chat without Wifi
+
+- `npm install`.
+- run `npm run start`
+- run `npm run android` 
