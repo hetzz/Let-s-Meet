@@ -43,6 +43,7 @@ var firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 let database = firebase.database().ref();
+let metadatabase = firebase.database().ref();
 let yourId = Math.floor(Math.random() * 1000000000);
 const configuration = {
   iceServers: [{url: 'stun:stun.l.google.com:19302'}],
@@ -69,6 +70,8 @@ readMessage = data => {
     console.log(e);
   }
 };
+
+
 // database.on('child_added', readMessage);
 
 const instructions = Platform.select({
@@ -119,6 +122,26 @@ export default class App extends Component {
     //this.handleSubmit = this.handleSubmit.bind(this);
   }
 
+  readMetaMessage = data => {
+    try {
+      let message = data.val().message;
+      
+      
+      if(message === "CALL_END") {
+        this.setState({
+          appState: 0
+        })
+      }
+    } catch (e) {
+      console.log("meta")
+      console.log(e);
+    }
+  }
+
+  sendEndMessage = () => {
+    let msg = metadatabase.push({message: "CALL_END"});
+  }
+
   handleChange(event) {
     let {name, value} = event;
     console.log(name, value);
@@ -167,7 +190,7 @@ export default class App extends Component {
     });
     pc.onaddstream = event => this.setState({remoteVideo: event.stream});
     sendMessage = (senderId, data) => {
-      var msg = database.push({sender: senderId, message: data});
+      let msg = database.push({sender: senderId, message: data});
       // msg.remove();
     };
 
@@ -222,7 +245,9 @@ export default class App extends Component {
 
   joinRoom = startCallToo => {
     database = firebase.database().ref(`room-${this.state.code}`);
+    metadatabase = firebase.database().ref(`room-${this.state.code}-meta`);
     database.on('child_added', readMessage);
+    metadatabase.on('child_added', this.readMetaMessage);
     this.setState({
       appState: 4,
     });
@@ -273,7 +298,7 @@ export default class App extends Component {
               myVideo={this.state.myVideo}
               switchCamera={this.switchCamera}
               code={this.state.code}
-              endCall={this.endCall}
+              endCall={this.sendEndMessage}
             />
           ) : (
             <View style={styles.container}>
