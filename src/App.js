@@ -48,41 +48,10 @@ let yourId = Math.floor(Math.random() * 1000000000);
 const configuration = {
   iceServers: [{url: 'stun:stun.l.google.com:19302'}],
 };
-const pc = new RTCPeerConnection(configuration);
-pc.onicecandidate = event => {
-  
-  event.candidate ? sendMessage(yourId, JSON.stringify({ice: event.candidate})) : console.log('Sent All Ice');
-};
-readMessage = data => {
-  try {
-    let msg = JSON.parse(data.val().message);
-    let sender = data.val().sender;
-    if (sender != yourId) {
-      if (msg.ice != undefined) pc.addIceCandidate(new RTCIceCandidate(msg.ice));
-      else if (msg.sdp.type == 'offer')
-        pc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
-          .then(() => pc.createAnswer())
-          .then(answer => pc.setLocalDescription(answer))
-          .then(() => sendMessage(yourId, JSON.stringify({sdp: pc.localDescription})));
-      else if (msg.sdp.type == 'answer') pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-    }
-  } catch (e) {
-    console.log(e);
-  }
-};
+let pc;
 
-
-// database.on('child_added', readMessage);
-
-const instructions = Platform.select({
-  ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
-  android: 'Double tap R on your keyboard to reload,\n' + 'Shake or press menu button for dev menu',
-});
-
-type Props = {};
-
-let welcome = 'Hi!';
-const array = ['Hello!', 'Wilcommen!', 'Hola!', 'नमस्ते!', '你好', 'Привет'];
+let welcome = 'Hello!';
+const array = ['Hello!', 'Wilcommen!', 'Hola!', 'नमस्ते!', '你好!', 'Привет!'];
 
 const randomString = length => {
   let chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -128,9 +97,7 @@ export default class App extends Component {
       
       
       if(message === "CALL_END") {
-        this.setState({
-          appState: 0
-        })
+        this.endCall();
       }
     } catch (e) {
       console.log("meta")
@@ -153,7 +120,12 @@ export default class App extends Component {
     this.setState({code: text});
   }
 
-  componentDidMount() {
+  initWebRTC() {
+    pc = new RTCPeerConnection(configuration);
+    pc.onicecandidate = event => {
+      
+      event.candidate ? sendMessage(yourId, JSON.stringify({ice: event.candidate})) : console.log('Sent All Ice');
+    };
     const {isFront} = this.state;
     mediaDevices.enumerateDevices().then(sourceInfos => {
       console.log(sourceInfos);
@@ -189,6 +161,28 @@ export default class App extends Component {
         });
     });
     pc.onaddstream = event => this.setState({remoteVideo: event.stream});
+  }
+
+  readMessage = data => {
+    try {
+      let msg = JSON.parse(data.val().message);
+      let sender = data.val().sender;
+      if (sender != yourId) {
+        if (msg.ice != undefined) pc.addIceCandidate(new RTCIceCandidate(msg.ice));
+        else if (msg.sdp.type == 'offer')
+          pc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
+            .then(() => pc.createAnswer())
+            .then(answer => pc.setLocalDescription(answer))
+            .then(() => sendMessage(yourId, JSON.stringify({sdp: pc.localDescription})));
+        else if (msg.sdp.type == 'answer') pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  componentDidMount() {
+    this.initWebRTC();
     sendMessage = (senderId, data) => {
       let msg = database.push({sender: senderId, message: data});
       // msg.remove();
@@ -232,8 +226,6 @@ export default class App extends Component {
     }, 80);
   }
   showPartnerFace = () => {
-    //database = firebase.database().ref(`room-${this.state.code}`);
-    // database.on('child_added', readMessage);
     pc.createOffer().then(desc => {
       pc.setLocalDescription(desc).then(() => {
         
@@ -246,7 +238,7 @@ export default class App extends Component {
   joinRoom = startCallToo => {
     database = firebase.database().ref(`room-${this.state.code}`);
     metadatabase = firebase.database().ref(`room-${this.state.code}-meta`);
-    database.on('child_added', readMessage);
+    database.on('child_added', this.readMessage);
     metadatabase.on('child_added', this.readMetaMessage);
     this.setState({
       appState: 4,
@@ -269,7 +261,11 @@ export default class App extends Component {
         code: '',
       },
       () => {
+        metadatabase = null;
         database = null;
+        pc.close();
+        pc = null;
+        this.initWebRTC();
       },
     );
   };
