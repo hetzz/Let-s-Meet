@@ -14,9 +14,53 @@ import Icon2 from "react-native-vector-icons/MaterialIcons";
 import { RTCPeerConnection, RTCView, mediaDevices } from "react-native-webrtc";
 
 export default class VidCall extends Component {
+    state = {
+        switchPos: false,
+    };
     render() {
         let { remoteVideo, myVideo, code, endCall, switchCamera } = this.props;
+        let topVid = null,
+            bottomVid = null;
         //console.log(localStream, remoteStream)
+        if (this.state.switchPos) {
+            topVid = (
+                <RTCView
+                    streamURL={myVideo ? myVideo.toURL() : null}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                    }}
+                />
+            );
+            bottomVid = (
+                <RTCView
+                    streamURL={remoteVideo ? remoteVideo.toURL() : null}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                    }}
+                />
+            );
+        } else {
+            bottomVid = (
+                <RTCView
+                    streamURL={myVideo ? myVideo.toURL() : null}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                    }}
+                />
+            );
+            topVid = (
+                <RTCView
+                    streamURL={remoteVideo ? remoteVideo.toURL() : null}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                    }}
+                />
+            );
+        }
         return (
             <>
                 <View
@@ -40,14 +84,26 @@ export default class VidCall extends Component {
                             height: "80%",
                         }}
                     >
-                        <RTCView
-                            streamURL={remoteVideo ? remoteVideo.toURL() : null}
-                            style={styles.remotevid}
-                        />
-                        <RTCView
-                            streamURL={myVideo ? myVideo.toURL() : null}
-                            style={styles.myvideo}
-                        />
+                        <View
+                            style={{
+                                position: "absolute",
+                                top: 0,
+                                right: 0,
+                                width: "100%",
+                                height: "100%",
+                                zIndex: 99999,
+                                backgroundColor: "black",
+                            }}
+                        >
+                            {!remoteVideo ? (
+                                <RTCView
+                                    streamURL={myVideo ? myVideo.toURL() : null}
+                                    style={{ width: "100%", height: "100%" }}
+                                />
+                            ) : (
+                                topVid
+                            )}
+                        </View>
                     </View>
                     <View
                         style={{ padding: 10, flex: 1, flexDirection: "row" }}
@@ -99,7 +155,38 @@ export default class VidCall extends Component {
                                 </View>
                             </TouchableOpacity>
                         </View>
-                        <View style={{ flex: 1 }} />
+
+                        <View
+                            style={{
+                                flex: 1,
+                                justifyContent: "center",
+                                alignItems: "center",
+                            }}
+                        >
+                            <TouchableOpacity
+                                onPress={() =>
+                                    this.setState((prevState) => {
+                                        return {
+                                            switchPos: !prevState.switchPos,
+                                        };
+                                    })
+                                }
+                                style={{ width: "100%", height: "100%" }}
+                            >
+                                {myVideo && remoteVideo ? (
+                                    <View
+                                        style={{
+                                            borderRadius: 10,
+                                            width: "100%",
+                                            height: "100%",
+                                            backgroundColor: "black",
+                                        }}
+                                    >
+                                        {bottomVid}
+                                    </View>
+                                ) : null}
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
             </>

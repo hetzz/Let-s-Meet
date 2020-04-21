@@ -83,6 +83,7 @@ export default class App extends Component {
       j: 0,
       forward: true,
       waitCount: 6,
+      code: ''
     };
     console.log(this.state);
 
@@ -259,6 +260,9 @@ export default class App extends Component {
       {
         appState: 0,
         code: '',
+        remoteVideo: null,
+        myVideo: null,
+        isFront: true,
       },
       () => {
         metadatabase = null;
